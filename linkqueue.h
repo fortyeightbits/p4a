@@ -15,4 +15,4 @@ typedef struct Queue {
 // FUNCTION FORWARD DECLARATIONS HERE
 void Queue_init(Queue_t *);
 void Queue_enqueue(char* , Queue_t* );
-int Queue_dequeue(Queue_t *, char* );
+int Queue_dequeue(Queue_t *);
