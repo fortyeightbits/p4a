@@ -10,6 +10,7 @@ typedef struct Node {
 typedef struct Queue {
 	Node_t *head;
 	Node_t *tail;
+	int size;
 } Queue_t;
 
 // FUNCTION FORWARD DECLARATIONS HERE

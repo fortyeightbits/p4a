@@ -3,6 +3,7 @@
 
 void Queue_init(Queue_t* q)
 {
+	q->size = 0;
     Node_t* temp = (Node_t*)malloc(sizeof(Node_t));
     temp->next = NULL;
     q->head = temp;
@@ -22,6 +23,7 @@ void Queue_enqueue(char* x, Queue_t* q) {
         q->tail->next = temp;
         q->tail = temp;
     }
+	q->size++;
 }
 
 //value has head->next's value, not the head
@@ -34,5 +36,7 @@ int Queue_dequeue(Queue_t *q) {
 //	value = newHead->data;
     q->head = newHead;
     free(tmp);
+	q->size--;
     return 0;
 }
+
