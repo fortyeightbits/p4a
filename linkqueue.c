@@ -31,7 +31,7 @@ int Queue_dequeue(Queue_t *q) {
     Node_t *tmp = q->head;
     Node_t *newHead = tmp->next;
     if (newHead == NULL) {
-        return -1; // queue was empty
+        return -1; // queue was empty       
     }
 //	value = newHead->data;
     q->head = newHead;

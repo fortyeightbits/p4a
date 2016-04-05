@@ -5,7 +5,7 @@
 #include <assert.h>
 #include <stdint.h>
 #include <pthread.h>
-#include "linkqueue.c"
+#include "linkqueue.h"
 
 int crawl(char *start_url,
 	  int download_workers,
@@ -31,7 +31,7 @@ void* downloader(void *arg) {
     pthread_mutex_lock(&linkQueueMutex);
     while (linkQueue->size == 0) //sleep if there's no links to get
         Pthread_cond_wait(&linkQueueFill, &linkQueueMutex);
-    downloadpage(); //TODO download function
+    downloadPage(); //TODO download function
     pthread_cond_signal(&linkQueueEmpty);
     pthread_mutex_unlock(&linkQueueMutex);
 }
@@ -41,13 +41,13 @@ void* parser(void *arg) {
     pthread_mutex_lock(&linkQueueMutex);
     while (linkQueue->size == queue_size) //sleep if queue is full. Is this right?
         Pthread_cond_wait(&linkQueueEmpty, &linkQueueMutex);
-    parseparge(linkQueue, start_url, (*_fetch_fn)(char *url)); //TODO: parse page
+    parsePage(); //TODO: parse page
     pthread_cond_signal(&linkQueueFill);
     pthread_mutex_unlock(&linkQueueMutex);
 }
 
 //BUGGLE!!! Not sure if I'm using callbacks/functionptr(?) right. :( Trying to pass _fetch_fn to this parsepage function.
-downloadPage(Queue_t* linkqueue, char *start, char * (*_fetch_fn)(char *url), Queue_t* pagequeue){
+void downloadPage(Queue_t* linkqueue, char *start, char * (*_fetch_fn)(char *url), Queue_t* pagequeue){
 
   char* dequeuedLink;
   char* content;
@@ -61,7 +61,7 @@ downloadPage(Queue_t* linkqueue, char *start, char * (*_fetch_fn)(char *url), Qu
 }
 
 //dequeue from page queue, get links
-parsePage(Queue_t* pagequeue, Queue_t* linkqueue){
+void parsePage(Queue_t* pagequeue, void (*_edge_fn)(char *from, char *to), Queue_t* linkqueue){
   char* lineSavePtr = NULL;
   char* spaceSavePtr = NULL;
   char* dequeuedPage;
