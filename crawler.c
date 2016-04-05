@@ -28,36 +28,79 @@ int crawl(char *start_url,
 
 //downloader is the consumer of links
 void* downloader(void *arg) {
-    Pthread_mutex_lock(&linkQueueMutex);
+    pthread_mutex_lock(&linkQueueMutex);
     while (linkQueue->size == 0) //sleep if there's no links to get
         Pthread_cond_wait(&linkQueueFill, &linkQueueMutex);
     downloadpage(); //TODO download function
-    Pthread_cond_signal(&linkQueueEmpty);
-    Pthread_mutex_unlock(&linkQueueMutex);
+    pthread_cond_signal(&linkQueueEmpty);
+    pthread_mutex_unlock(&linkQueueMutex);
 }
 
 //parser is the producer of links
 void* parser(void *arg) {
-    Pthread_mutex_lock(&linkQueueMutex);
+    pthread_mutex_lock(&linkQueueMutex);
     while (linkQueue->size == queue_size) //sleep if queue is full. Is this right?
         Pthread_cond_wait(&linkQueueEmpty, &linkQueueMutex);
     parseparge(linkQueue, start_url, (*_fetch_fn)(char *url)); //TODO: parse page
-    Pthread_cond_signal(&linkQueueFill);
-    Pthread_mutex_unlock(&linkQueueMutex);
+    pthread_cond_signal(&linkQueueFill);
+    pthread_mutex_unlock(&linkQueueMutex);
 }
 
 //BUGGLE!!! Not sure if I'm using callbacks/functionptr(?) right. :( Trying to pass _fetch_fn to this parsepage function.
-//
-//fetches page and gets links, enqueues it to link queue
-parsepage(Queue_t* linkqueue, char *start, char * (*_fetch_fn)(char *url)){
-	char** linkArray = (char**)malloc(10*sizeof(char*));
-	char* page = _fetch_fn(start);
-	assert (page != NULL);
-	//printf("PAGE: %s\n", page);
-	
-	char* linkline = strstr(page, "link:");
-	//first link
-	*linkArray = linkline+(5*sizeof(char)); //linkline points to "l", so +5 char to get the link that comes after ":"? Not sure if this makes sense;
-	//TODO: loop to get other links
-	Queue_enqueue(link, linkqueue);
+downloadPage(Queue_t* linkqueue, char *start, char * (*_fetch_fn)(char *url), Queue_t* pagequeue){
+
+  char* dequeuedLink;
+  char* content;
+  Queue_dequeue(dequeuedLink, linkqueue);
+  char* page = _fetch_fn(start);
+    assert (page != NULL);
+    //printf("PAGE: %s\n", page);
+
+    //enqueue page content
+    Queue_enqueue(page, pagequeue);
+}
+
+//dequeue from page queue, get links
+parsePage(Queue_t* pagequeue, Queue_t* linkqueue){
+  char* lineSavePtr = NULL;
+  char* spaceSavePtr = NULL;
+  char* dequeuedPage;
+  char* line;
+  char* link;
+  int j;
+  int i;
+  char* delimiter1 = "\n";
+  char* delimiter2 = " ";
+
+  Queue_dequeue(dequeuedPage, pagequeue);
+  //link:wisc.edu
+
+  for (j = 0; ; j++, dequeuedPage = NULL) {
+      line = strtok_r(dequeuedPage, delimiter1, &lineSavePtr);
+      if (line == NULL)
+          break;
+      printf("Line %d: %s\n", j, line);
+
+      for (i = 0; ; line = NULL, i++) {
+          link = strtok_r(line, delimiter2, &spaceSavePtr);
+          if (link == NULL)
+              break;
+          //Process "link" here.
+          printf(" --> %s\n", link);
+      }
+  }
+
+  //char* linkline = strstr(page, "link:");
+    //first link
+    //*linkArray = linkline+(5*sizeof(char)); //linkline points to "l", so +5 char to get the link that comes after ":"? Not sure if this makes sense;
+    //TODO: loop to get other links
+}
+
+//removes \n
+void removeLine (char* string){
+    int length;
+    if ((length = strlen(string)) >0){
+        if (string[length - 1] == '\n')
+            string[length - 1] = '\0';
+    }
 }
