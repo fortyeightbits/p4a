@@ -6,6 +6,18 @@
 #include <stdint.h>
 #include <pthread.h>
 
+//for parser to enqueue 
+/*typedef struct EnQArgPacket{
+	char* x;
+	Queue_t* q;
+} EPacket_t;
+
+//for downloader to dequeue
+typedef struct DeQArgPacket{
+	Queue_t* q;
+	char** returnvalue;
+} DPacket_t;*/
+
 typedef struct Node {
 	char* data;
 	struct Node* next;
@@ -20,7 +32,7 @@ typedef struct Queue {
 pthread_mutex_t linkQueueMutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t linkQueueEmpty = PTHREAD_COND_INITIALIZER;
 pthread_cond_t linkQueueFill = PTHREAD_COND_INITIALIZER;
-int queue_size = 2;
+int queue_size = 2; //TODO: PASS IN AS ARG
   
 void Queue_init(Queue_t* q)
 {
@@ -73,7 +85,11 @@ int Queue_dequeue(Queue_t *q, char** returnvalue) {
 	Node_t *newHead = tmp->next;
 	if (newHead == NULL) {
 		free(q->head);
-		Queue_init(q);
+		q->size = 0;
+		Node_t* temp = (Node_t*)malloc(sizeof(Node_t));	
+		temp->next = NULL;
+		q->head = temp;
+		q->tail = temp;	
 		return -1; // queue was empty
 	}
 	//	value = newHead->data;
@@ -113,8 +129,8 @@ int main(int argc, char* argv[])
 	
 	Queue_t linkQueue;
 	Queue_init(&linkQueue);
-	Queue_t pageQueue;
-	Queue_init(&pageQueue);
+	//Queue_t pageQueue;
+	//Queue_init(&pageQueue);
 	
 	pthread_t downloadthread;
 	//pthread_t parsethread;
@@ -122,45 +138,30 @@ int main(int argc, char* argv[])
 		printf("Threading sucks..");
 	//pthread_create(&parsethread, NULL, parser, (void *)&pageQueue);
 	pthread_join(downloadthread, NULL);
-	
-	/*
-	Queue_t kiutqueue;
-	char* text = "meow";
-	char* text2 = "nuu";
-	Queue_init(&kiutqueue);
-	Queue_enqueue(text, &kiutqueue);
-	Queue_enqueue(text2, &kiutqueue);
-	Queue_dequeue(&kiutqueue, &returnValue);
-	Queue_dequeue(&kiutqueue, &returnValue1);
-	printf("%s\n", (kiutqueue.head)->data);
-	printf("returndata: %s\n", returnValue);
-	//The printf below SHOULD seg fault buggle, so set breakpoint before(hehe u have to use gdb now)
-	printf("%s\n", (kiutqueue.head)->next->data);
-	printf("%s\n", returnvalue);
-	*/
 }
 
+
 void* downloader(void* q) {
+
+	//downloader dequeues from link queue
+	//Queue_dequeue((DPacket_t*)argPtr->q,(DPacket_t*)argPtr->returnvalue);
+	
 	Queue_t* qq  = q;
 	char* returnvalue = (char*)malloc(sizeof(char));
 	
     printf("downloading page!\n"); 
 	char* text = "meow";
 	if (Queue_enqueue(text, qq) != 0)
-	//NOTE: Enqueue works (according to gdb, see I actually use it okayy)
 		printf("enqueue failed\n");
 	
-	//NOTE: Dequeue doesn't work. It gets stuck D:
-	if (Queue_dequeue(qq, &returnvalue) != 0)
-		printf("dequeue failed\n");
+	Queue_dequeue(qq, &returnvalue);
 	
 	return NULL;
 }
 
-void* parser(void* q) {
-	Queue_t* qq  = q;
-    printf("parsing page!\n"); 
-	char* text2 = "nuu";
-	Queue_enqueue(text2, qq);
+void* parser(void* arg) {
+	//parser enqueues to link queue
+	//Queue_enqueue((Epacket_t*)argPtr->x, (Epacket_t*)argPtr->q);
+	
 	return NULL;
 }
