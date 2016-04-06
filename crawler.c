@@ -76,20 +76,29 @@ void parsePage(Queue_t* pagequeue, void (*_edge_fn)(char *from, char *to), Queue
   //link:wisc.edu
 
   for (j = 0; ; j++, dequeuedPage = NULL) {
-      line = strtok_r(dequeuedPage, delimiter1, &lineSavePtr);
-      if (line == NULL)
-          break;
-      printf("Line %d: %s\n", j, line);
+    line = strtok_r(dequeuedPage, delimiter1, &lineSavePtr);
+    if (line == NULL)
+        break;
+    printf("Line %d: %s\n", j, line);
 
       for (i = 0; ; line = NULL, i++) {
-          link = strtok_r(line, delimiter2, &spaceSavePtr);
-          if (link == NULL)
-              break;
-          //Process "link" here.
-          printf(" --> %s\n", link);
+        link = strtok_r(line, delimiter2, &spaceSavePtr);
+        if (link == NULL)
+            break;
+        char* linkchunk = strstr(link, "link:");
+
+        if(linkchunk != NULL)
+        {
+            linkchunk = linkchunk+(5*sizeof(char));
+            removeLine(linkchunk);
+            printf("here's the link: %s\n", linkchunk);
+        }
+         //TODO: how to get link of page it's currently on?
+        //edge(currentlink, linkchunk);
+        //Queue_enqueue(linkchunk, linkQueue);
+        printf(" --> %s\n", link);
       }
   }
-
   //char* linkline = strstr(page, "link:");
     //first link
     //*linkArray = linkline+(5*sizeof(char)); //linkline points to "l", so +5 char to get the link that comes after ":"? Not sure if this makes sense;
