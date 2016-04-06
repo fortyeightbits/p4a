@@ -27,16 +27,19 @@ void Queue_enqueue(char* x, Queue_t* q) {
 }
 
 //value has head->next's value, not the head
-int Queue_dequeue(Queue_t *q) {
+int Queue_dequeue(Queue_t *q, char** returnvalue) {
     Node_t *tmp = q->head;
+    *returnvalue = q->head->data;
     Node_t *newHead = tmp->next;
     if (newHead == NULL) {
-        return -1; // queue was empty       
+        free(q->head);
+        Queue_init(q);
+        return -1; // queue was empty
     }
 //	value = newHead->data;
     q->head = newHead;
     free(tmp);
-	q->size--;
+    q->size--;
     return 0;
 }
 
