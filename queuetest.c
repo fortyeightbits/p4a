@@ -15,7 +15,8 @@ pthread_mutex_t	mainMutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t linkQueueEmpty = PTHREAD_COND_INITIALIZER;
 pthread_cond_t linkQueueFill = PTHREAD_COND_INITIALIZER;
 pthread_cond_t noWorkInSystem = PTHREAD_COND_INTIALIZER;
-int workInSystem = 0
+int workInSystem = 0;
+//ALSO: atm each thread only dequeues once. in crawler it should do while queue not empty. I think.
 
 typedef struct Node {
 	char* data;
@@ -43,8 +44,7 @@ typedef struct DeQArgPacket{
 //---------------------------------------------------------
 
 
-void Queue_init(Queue_t* q)
-{
+void Queue_init(Queue_t* q){
 	pthread_mutex_lock(&linkQueueMutex);
 	//////////
 	q->size = 0;
@@ -107,14 +107,25 @@ int Queue_dequeue(Queue_t *q, char** returnvalue) {
 }
 
 
+//parser enqueues
 void enq_helper(void* argPtr)
 {
 	Queue_enqueue((Epacket_t*)argPtr->x, (Epacket_t*)argPtr->q);
+	pthread_mutex_lock(&mainMutex);
+	workInSystem++;
+	pthread_mutex_unlock(&mainMutex);
 }
 
+//downloader dequeues 
 void deq_helper(void* argPtr)
 {
 	Queue_dequeue((DPacket_t*)argPtr->q,(DPacket_t*)argPtr->returnvalue);
+	pthread_mutex_lock(&mainMutex);
+	workInSystem--;
+	if (workInSystem == 0)
+		pthread_cond_signal(&noWorkInSystem);
+	pthread_mutex_unlock(&mainMutex);
+	//Remember that in the real crawler, workinsystem only incremented when something enqueued to linkqueue, dec when dequeued from pagequeue
 }
 
 int main(int argc, char* argv[])
@@ -161,11 +172,17 @@ int main(int argc, char* argv[])
 	}
 	
 	pthread_mutex_lock(&mainMutex);
-	while (workInSystem == 0 && kiutqueue.size == 0)
-		pthread_cond_wait(&noWorkInSystem,&mainMutex);
+	while (workInSystem != 0 && kiutqueue.size != 0) 
+		pthread_cond_wait(&noWorkInSystem,&mainMutex); //sleep while workers not done
 	pthread_mutex_unlock(&mainMutex);
 	// Signalling for this condition has yet to be done Buggle, please look into it.	
 
+	int m;
+	for(m = 0; m < PRODUCERS; m++)
+	{
+		pthread_join(&producer_pool[m], NULL);
+		pthread_join(&consumer_pool[m], NULL);				
+	}
 }
 		
 		
