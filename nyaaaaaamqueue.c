@@ -119,49 +119,50 @@ int Queue_dequeue(Queue_t *q, char** returnvalue) {
 	printf("%s\n", (kiutqueue.head)->data);
 }*/
 
-	
+	Queue_t linkQueue;
 	void* downloader(void *arg);
-	//void* parser(void *arg);
-
+	void* parser(void *arg);
+	
 
 int main(int argc, char* argv[])
 {
 	
-	Queue_t linkQueue;
+	
 	Queue_init(&linkQueue);
-	//Queue_t pageQueue;
-	//Queue_init(&pageQueue);
+	char* text = "link1";
+	char* text2 = "link2";
+	Queue_enqueue(text, &linkQueue);
+	Queue_enqueue(text2, &linkQueue);
 	
 	pthread_t downloadthread;
-	//pthread_t parsethread;
-	if (pthread_create(&downloadthread, NULL, downloader, (void *)&linkQueue) != 0)
-		printf("Threading sucks..");
-	//pthread_create(&parsethread, NULL, parser, (void *)&pageQueue);
+	pthread_t parsethread;
+	pthread_create(&downloadthread, NULL, downloader, (void *)&linkQueue);
+	pthread_create(&parsethread, NULL, parser, (void *)&linkQueue);
 	pthread_join(downloadthread, NULL);
+	pthread_join(parsethread, NULL);
 }
 
 
 void* downloader(void* q) {
 
 	//downloader dequeues from link queue
-	//Queue_dequeue((DPacket_t*)argPtr->q,(DPacket_t*)argPtr->returnvalue);
 	
-	Queue_t* qq  = q;
 	char* returnvalue = (char*)malloc(sizeof(char));
 	
-    printf("downloading page!\n"); 
-	char* text = "meow";
-	if (Queue_enqueue(text, qq) != 0)
-		printf("enqueue failed\n");
-	
-	Queue_dequeue(qq, &returnvalue);
-	
+	//while(linkQueue.size != 0){
+    printf("downloading page!\n"); 	
+	Queue_dequeue(&q, &returnvalue);
+	printf("return: %s\n", returnvalue);
+	//}
 	return NULL;
 }
 
 void* parser(void* arg) {
 	//parser enqueues to link queue
-	//Queue_enqueue((Epacket_t*)argPtr->x, (Epacket_t*)argPtr->q);
+	
+	 printf("parsing page!\n"); 
+	char* text3 = "link3";
+	Queue_enqueue(text3, &arg);
 	
 	return NULL;
 }

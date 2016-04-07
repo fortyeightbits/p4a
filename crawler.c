@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include <pthread.h>
 #include "linkqueue.h"
+#include "pagequeue.h"
 
 int crawl(char *start_url,
 	  int download_workers,
@@ -14,14 +15,30 @@ int crawl(char *start_url,
 	  char * (*_fetch_fn)(char *url),
 	  void (*_edge_fn)(char *from, char *to)) {
 
-  //link queue for parser to queue, downloader to dequeue urls
-	pthread_mutex_t linkQueueMutex = PTHREAD_MUTEX_INITIALIZER;
-	pthread_cond_t linkQueueEmpty = PTHREAD_COND_INITIALIZER;
-	pthread_cond_t linkQueueFill = PTHREAD_COND_INITIALIZER;
-	Queue_t linkQueue;
-	Queue_init(&linkQueue);
+	//Set up queues
+	L_Queue_t linkQueue;
+	LinkQueue_init(&linkQueue);
+	P_Queue_t pageQueue;
+	PageQueue_init(&pageQueue);
+
+	//Set up threads
+	pthread_t downloader_pool[download_workers];
+	pthread_t parser_pool[parse_workers];
 	
-	free(page);
+	//create downloaders
+	int d;
+	for(d = 0; d < download_workers; d++)
+	{
+		//what to pass in? change producerArgs
+		pthread_create(&downloader_pool[d], NULL, downloader, ((void*)(&producerArgs[k])));			
+	}
+	
+	int p;
+	for(p = 0; p < parse_workers; p++)
+	{
+		//what to pass in? change consumerArgs
+		pthread_create(&parser_pool[p], NULL, parser, ((void*)(&consumerArgs[l])));	
+	}
 
   return -1;
 }
@@ -99,10 +116,6 @@ void parsePage(Queue_t* pagequeue, void (*_edge_fn)(char *from, char *to), Queue
         printf(" --> %s\n", link);
       }
   }
-  //char* linkline = strstr(page, "link:");
-    //first link
-    //*linkArray = linkline+(5*sizeof(char)); //linkline points to "l", so +5 char to get the link that comes after ":"? Not sure if this makes sense;
-    //TODO: loop to get other links
 }
 
 //removes \n

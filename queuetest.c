@@ -7,8 +7,8 @@
 #include <pthread.h>
 
 // Header file section:
-#define CONSUMERS 1
-#define PRODUCERS 3
+#define CONSUMERS 2
+#define PRODUCERS 1
 
 pthread_mutex_t linkQueueMutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t	mainMutex = PTHREAD_MUTEX_INITIALIZER;
@@ -153,11 +153,12 @@ void *deq_helper(void* argPtr)
 	pthread_mutex_lock(&mainMutex);
 	printf("%d: dequeuehelper got mainmutex, --work; workInSystem = %d \n", pthread_self(), workInSystem);
 	workInSystem--;
+	printf("%d: dequeuehelper finish dec, workInSystem = %d \n", pthread_self(), workInSystem);
 	if (workInSystem <= 0){
 		printf("%d: dequeuehelper waking main up, no more work\n", pthread_self());
 		pthread_cond_signal(&noWorkInSystem);
 	}
-	printf("%d: dequeuehelper wakes, unlocking mainmutex; workInSystem = %d \n", pthread_self(), workInSystem);
+	printf("%d: dequeuehelper unlocking mainmutex\n", pthread_self());
 	pthread_mutex_unlock(&mainMutex);
 	printf("%d: dequeuehelper released mainmutex\n", pthread_self());
 	//Remember that in the real crawler, workinsystem only incremented when something enqueued to linkqueue, dec when dequeued from pagequeue
@@ -214,11 +215,14 @@ int main(int argc, char* argv[])
 	pthread_mutex_lock(&mainMutex);
 	printf("main got mainmutex lock\n");
 	
+	printf("main shall sleep now\n");
+	pthread_cond_wait(&noWorkInSystem,&mainMutex); 
 	while (workInSystem != 0 && kiutqueue.size != 0) {
 		printf("main sleeping while waiting for 0 workinsystem\n");
 		pthread_cond_wait(&noWorkInSystem,&mainMutex); //sleep while workers not done
 	}
 	printf("main woke up or never slept, is unlocking\n");
+	printf("%d workInSystem\n", workInSystem);
 	pthread_mutex_unlock(&mainMutex);
 	// Signalling for this condition has yet to be done Buggle, please look into it.	
 	printf("main released mainmutex lock\n");
@@ -226,21 +230,16 @@ int main(int argc, char* argv[])
 	int m;
 	for(m = 0; m < PRODUCERS; m++)
 	{
-		pthread_join(producer_pool[m], NULL);
-		pthread_join(consumer_pool[m], NULL);				
+		pthread_join(producer_pool[m], NULL);			
+	}
+	
+	int n;
+	for(n = 0; n < CONSUMERS; n++)
+	{
+		pthread_join(consumer_pool[n], NULL);			
 	}
 	
 	printf("done\n");
 	return 0;
 }
 		
-		
-	/*Queue_enqueue(text, &kiutqueue);
-	Queue_enqueue(text2, &kiutqueue);
-	Queue_dequeue(&kiutqueue, &returnValue);
-	Queue_dequeue(&kiutqueue, &returnValue1);
-	printf("%s\n", (kiutqueue.head)->data);
-	printf("returndata: %s\n", returnValue);*/
-	//The printf below SHOULD seg fault buggle, so set breakpoint before(hehe u have to use gdb now)
-	//printf("%s\n", (kiutqueue.head)->next->data);
-	//printf("%s\n", returnvalue);
