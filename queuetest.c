@@ -14,7 +14,7 @@ pthread_mutex_t linkQueueMutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t	mainMutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t linkQueueEmpty = PTHREAD_COND_INITIALIZER;
 pthread_cond_t linkQueueFill = PTHREAD_COND_INITIALIZER;
-pthread_cond_t noWorkInSystem = PTHREAD_COND_INTIALIZER;
+pthread_cond_t noWorkInSystem = PTHREAD_COND_INITIALIZER;
 int workInSystem = 0;
 //ALSO: atm each thread only dequeues once. in crawler it should do while queue not empty. I think.
 
@@ -38,7 +38,6 @@ typedef struct EnQArgPacket{
 typedef struct DeQArgPacket{
 	Queue_t* q;
 	char** returnvalue;
-	int queue_size;
 } DPacket_t;
 
 //---------------------------------------------------------
@@ -56,7 +55,7 @@ void Queue_init(Queue_t* q){
 	pthread_mutex_unlock(&linkQueueMutex);
 }
 
-int Queue_enqueue(char* x, Queue_t* q) {
+int Queue_enqueue(char* x, Queue_t* q, int queue_size) {
 	
 	pthread_mutex_lock(&linkQueueMutex);
 	while (q->size == queue_size) //TODO: get queue size
@@ -84,6 +83,12 @@ int Queue_enqueue(char* x, Queue_t* q) {
 
 //value has head->next's value, not the head
 int Queue_dequeue(Queue_t *q, char** returnvalue) {
+	
+	pthread_mutex_lock(&linkQueueMutex);
+	while (q->size == 0) //sleep if there's no links to get
+        pthread_cond_wait(&linkQueueFill, &linkQueueMutex);
+	/////////////////
+	
 	Node_t *tmp = q->head;
 	*returnvalue = q->head->data;
 	Node_t *newHead = tmp->next;
@@ -108,21 +113,21 @@ int Queue_dequeue(Queue_t *q, char** returnvalue) {
 
 
 //parser enqueues
-void enq_helper(void* argPtr)
+void *enq_helper(void* argPtr)
 {
-	Queue_enqueue((Epacket_t*)argPtr->x, (Epacket_t*)argPtr->q);
+	Queue_enqueue(((EPacket_t*)(argPtr))->x, ((EPacket_t*)(argPtr))->q, ((EPacket_t*)(argPtr))->queue_size);
 	pthread_mutex_lock(&mainMutex);
 	workInSystem++;
 	pthread_mutex_unlock(&mainMutex);
 }
 
 //downloader dequeues 
-void deq_helper(void* argPtr)
+void *deq_helper(void* argPtr)
 {
-	Queue_dequeue((DPacket_t*)argPtr->q,(DPacket_t*)argPtr->returnvalue);
+	Queue_dequeue(((DPacket_t*)argPtr)->q,((DPacket_t*)argPtr)->returnvalue);
 	pthread_mutex_lock(&mainMutex);
 	workInSystem--;
-	if (workInSystem == 0)
+	while (workInSystem == 0)
 		pthread_cond_signal(&noWorkInSystem);
 	pthread_mutex_unlock(&mainMutex);
 	//Remember that in the real crawler, workinsystem only incremented when something enqueued to linkqueue, dec when dequeued from pagequeue
@@ -132,13 +137,13 @@ int main(int argc, char* argv[])
 {
 	pthread_t consumer_pool[10];
 	pthread_t producer_pool[10];
-	Epacket_t producerArgs[10];
-	Dpacket_t consumerArgs[10];
+	EPacket_t producerArgs[10];
+	DPacket_t consumerArgs[10];
 	char* dataArray[10] = {"a", "b", "c", "d", "e", "f", "g", "h", "i", "j"};
 	
 	char* returnValuePool[10];
-	void (*enqptr)(void* ) = &enq_helper;
-	void (*deqptr)(void* ) = &deq_helper;
+	//void (*enqptr)(void* ) = &enq_helper;
+	//void (*deqptr)(void* ) = &deq_helper;
 	Queue_t kiutqueue;
 	char* text = "meow";
 	char* text2 = "nuu";
@@ -151,7 +156,6 @@ int main(int argc, char* argv[])
 	{
 		consumerArgs[i].q = &kiutqueue;
 		consumerArgs[i].returnvalue = &returnValuePool[i];
-		consumerArgs[i].queue_size = queue;
 	}
 	
 	int j;
@@ -167,8 +171,8 @@ int main(int argc, char* argv[])
 	int k;
 	for(k = 0; k < PRODUCERS; k++)
 	{
-		pthread_create(&producer_pool[k], NULL, enqptr, producerArgs[k]);
-		pthread_create(&consumer_pool[k], NULL, deqptr, consumerArgs[k]);				
+		pthread_create(&producer_pool[k], NULL, enq_helper, ((void*)(&producerArgs[k])));
+		pthread_create(&consumer_pool[k], NULL, deq_helper, ((void*)(&consumerArgs[k])));				
 	}
 	
 	pthread_mutex_lock(&mainMutex);
@@ -180,8 +184,8 @@ int main(int argc, char* argv[])
 	int m;
 	for(m = 0; m < PRODUCERS; m++)
 	{
-		pthread_join(&producer_pool[m], NULL);
-		pthread_join(&consumer_pool[m], NULL);				
+		pthread_join(producer_pool[m], NULL);
+		pthread_join(consumer_pool[m], NULL);				
 	}
 }
 		
