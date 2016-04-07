@@ -7,8 +7,8 @@
 #include <pthread.h>
 
 // Header file section:
-#define CONSUMERS 2
-#define PRODUCERS 2
+#define CONSUMERS 1
+#define PRODUCERS 3
 
 pthread_mutex_t linkQueueMutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t	mainMutex = PTHREAD_MUTEX_INITIALIZER;
@@ -16,6 +16,7 @@ pthread_cond_t linkQueueEmpty = PTHREAD_COND_INITIALIZER;
 pthread_cond_t linkQueueFill = PTHREAD_COND_INITIALIZER;
 pthread_cond_t noWorkInSystem = PTHREAD_COND_INITIALIZER;
 int workInSystem = 0;
+//TODO: Put in crawler.
 //ALSO: atm each thread only dequeues once. in crawler it should do while queue not empty. I think.
 
 typedef struct Node {
@@ -137,9 +138,9 @@ void *enq_helper(void* argPtr)
 	Queue_enqueue(((EPacket_t*)(argPtr))->x, ((EPacket_t*)(argPtr))->q, ((EPacket_t*)(argPtr))->queue_size);
 	printf("%d: enqueuehelper getting mainmutex\n", pthread_self());
 	pthread_mutex_lock(&mainMutex);
-	printf("%d: enqueuehelper got mainmutex, ++work \n", pthread_self());
+	printf("%d: enqueuehelper got mainmutex, ++work; workInSystem = %d \n", pthread_self(), workInSystem);
 	workInSystem++;
-	printf("%d: enqueuehelper going to release mainmutex\n", pthread_self());
+	printf("%d: enqueuehelper going to release mainmutex; workInSystem = %d \n", pthread_self(), workInSystem);
 	pthread_mutex_unlock(&mainMutex);
 	printf("%d: enqueuehelper released mainmutex\n", pthread_self());
 }
@@ -150,13 +151,13 @@ void *deq_helper(void* argPtr)
 	Queue_dequeue(((DPacket_t*)argPtr)->q,((DPacket_t*)argPtr)->returnvalue);
 	printf("%d: dequeuehelper getting mainmutex\n", pthread_self());
 	pthread_mutex_lock(&mainMutex);
-	printf("%d: dequeuehelper got mainmutex, --work \n", pthread_self());
+	printf("%d: dequeuehelper got mainmutex, --work; workInSystem = %d \n", pthread_self(), workInSystem);
 	workInSystem--;
-	if (workInSystem == 0){
+	if (workInSystem <= 0){
 		printf("%d: dequeuehelper waking main up, no more work\n", pthread_self());
 		pthread_cond_signal(&noWorkInSystem);
 	}
-	printf("%d: dequeuehelper wakes, unlocking mainmutex\n", pthread_self());
+	printf("%d: dequeuehelper wakes, unlocking mainmutex; workInSystem = %d \n", pthread_self(), workInSystem);
 	pthread_mutex_unlock(&mainMutex);
 	printf("%d: dequeuehelper released mainmutex\n", pthread_self());
 	//Remember that in the real crawler, workinsystem only incremented when something enqueued to linkqueue, dec when dequeued from pagequeue
@@ -200,8 +201,13 @@ int main(int argc, char* argv[])
 	int k;
 	for(k = 0; k < PRODUCERS; k++)
 	{
-		pthread_create(&producer_pool[k], NULL, enq_helper, ((void*)(&producerArgs[k])));
-		pthread_create(&consumer_pool[k], NULL, deq_helper, ((void*)(&consumerArgs[k])));				
+		pthread_create(&producer_pool[k], NULL, enq_helper, ((void*)(&producerArgs[k])));			
+	}
+	
+	int l;
+	for(l = 0; l< CONSUMERS; l++)
+	{
+		pthread_create(&consumer_pool[l], NULL, deq_helper, ((void*)(&consumerArgs[l])));	
 	}
 	
 	printf("main getting mainmutex lock\n");
