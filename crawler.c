@@ -30,58 +30,39 @@ int crawl(char *start_url,
 	for(d = 0; d < download_workers; d++)
 	{
 		//what to pass in? change producerArgs
-		pthread_create(&downloader_pool[d], NULL, downloader, ((void*)(&producerArgs[k])));			
+		pthread_create(&downloader_pool[d], NULL, downloadHelper, ((void*)(&producerArgs[k])));			
 	}
 	
 	int p;
 	for(p = 0; p < parse_workers; p++)
 	{
 		//what to pass in? change consumerArgs
-		pthread_create(&parser_pool[p], NULL, parser, ((void*)(&consumerArgs[l])));	
+		pthread_create(&parser_pool[p], NULL, parseHelper, ((void*)(&consumerArgs[l])));	
 	}
 
   return -1;
 }
 
 //downloader is the consumer of links
-void* downloader(void *arg) {
-    pthread_mutex_lock(&linkQueueMutex);
-    while (linkQueue->size == 0) //sleep if there's no links to get
-        Pthread_cond_wait(&linkQueueFill, &linkQueueMutex);
-    downloadPage(); //TODO download function
-    pthread_cond_signal(&linkQueueEmpty);
-    pthread_mutex_unlock(&linkQueueMutex);
+void* downloadHelper(void *arg) {
+
 }
 
 //parser is the producer of links
-void* parser(void *arg) {
-    pthread_mutex_lock(&linkQueueMutex);
-    while (linkQueue->size == queue_size) //sleep if queue is full. Is this right?
-        Pthread_cond_wait(&linkQueueEmpty, &linkQueueMutex);
-    parsePage(); //TODO: parse page
-    pthread_cond_signal(&linkQueueFill);
-    pthread_mutex_unlock(&linkQueueMutex);
+void* parseHelper(void *arg) {
+
 }
 
-//BUGGLE!!! Not sure if I'm using callbacks/functionptr(?) right. :( Trying to pass _fetch_fn to this parsepage function.
-void downloadPage(Queue_t* linkqueue, char *start, char * (*_fetch_fn)(char *url), Queue_t* pagequeue){
+char* downloadPage(char *link, char * (*_fetch_fn)(char *url)){
 
-  char* dequeuedLink;
-  char* content;
-  Queue_dequeue(dequeuedLink, linkqueue);
-  char* page = _fetch_fn(start);
-    assert (page != NULL);
-    //printf("PAGE: %s\n", page);
-
-    //enqueue page content
-    Queue_enqueue(page, pagequeue);
+  char* page = _fetch_fn(link);
+  assert (page != NULL);
+  return page;
 }
 
-//dequeue from page queue, get links
-void parsePage(Queue_t* pagequeue, void (*_edge_fn)(char *from, char *to), Queue_t* linkqueue){
+void parsePage(char* page){
   char* lineSavePtr = NULL;
   char* spaceSavePtr = NULL;
-  char* dequeuedPage;
   char* line;
   char* link;
   int j;
@@ -89,11 +70,9 @@ void parsePage(Queue_t* pagequeue, void (*_edge_fn)(char *from, char *to), Queue
   char* delimiter1 = "\n";
   char* delimiter2 = " ";
 
-  Queue_dequeue(dequeuedPage, pagequeue);
-  //link:wisc.edu
 
-  for (j = 0; ; j++, dequeuedPage = NULL) {
-    line = strtok_r(dequeuedPage, delimiter1, &lineSavePtr);
+  for (j = 0; ; j++, page = NULL) {
+    line = strtok_r(page, delimiter1, &lineSavePtr);
     if (line == NULL)
         break;
     printf("Line %d: %s\n", j, line);
