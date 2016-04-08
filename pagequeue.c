@@ -5,7 +5,7 @@
 #include <assert.h>
 #include <stdint.h>
 #include <pthread.h>
-#include "linkqueue.h"
+#include "pagequeue.h"
 
 pthread_mutex_t pageQueueMutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t pageQueueFill = PTHREAD_COND_INITIALIZER;
@@ -13,7 +13,9 @@ pthread_cond_t pageQueueFill = PTHREAD_COND_INITIALIZER;
 void PageQueue_init(P_Queue_t* q){
 	printf("%d: init getting lock\n", pthread_self());
 	pthread_mutex_lock(&pageQueueMutex);
-	Node_t* temp = (Node_t*)malloc(sizeof(Node_t));	
+    P_Node_t* temp = (P_Node_t*)malloc(sizeof(P_Node_t));
+    temp->data = (char*)malloc(1000*sizeof(char));
+    temp->link = (char*)malloc(100*sizeof(char));
 	temp->next = NULL;
 	q->head = temp;
 	q->tail = temp;	
@@ -22,7 +24,7 @@ void PageQueue_init(P_Queue_t* q){
 }
 
 //for downloader to enqueue page
-int PageQueue_enqueue(char* x, P_Queue_t* q) {
+int PageQueue_enqueue(char* x, char* link, P_Queue_t* q) {
 	printf("%d: enqueue getting lock\n", pthread_self());
 	pthread_mutex_lock(&pageQueueMutex);
 	printf("%d: eequeue got lock\n", pthread_self());
@@ -30,8 +32,11 @@ int PageQueue_enqueue(char* x, P_Queue_t* q) {
 		q->tail->data = x;		
 	}
 	else{
-		Node_t* temp = (Node_t*)malloc(sizeof(Node_t));
-		temp->data = x; 
+        P_Node_t* temp = (P_Node_t*)malloc(sizeof(P_Node_t));
+        temp->data = (char*)malloc(1000*sizeof(char));
+        temp->link = (char*)malloc(100*sizeof(char));
+        strcpy(temp->data, x);
+        strcpy(temp->link, link);
 		temp->next = NULL;
 
 		q->tail->next = temp;
@@ -44,8 +49,8 @@ int PageQueue_enqueue(char* x, P_Queue_t* q) {
 	printf("%d: enqueue released lock\n", pthread_self());
 	return 0;
 }
-
-int PageQueue_dequeue(P_Queue_t *q, char** returnvalue) {
+// TODO: Look into returnvalue and link to see if malloc is required.
+int PageQueue_dequeue(P_Queue_t *q, char** returnvalue, char** link) {
 	printf("%d: dequeue getting lock\n", pthread_self());
 	pthread_mutex_lock(&pageQueueMutex);
 	printf("%d: dequeue got lock\n", pthread_self());
@@ -54,12 +59,15 @@ int PageQueue_dequeue(P_Queue_t *q, char** returnvalue) {
 		pthread_cond_wait(&pageQueueFill, &pageQueueMutex);
 	}
 	printf("%d: dequeue woke up\n", pthread_self());
-	Node_t *tmp = q->head;
+    P_Node_t *tmp = q->head;
 	*returnvalue = q->head->data;
-	Node_t *newHead = tmp->next;
+    *link       = q->head->link;
+    P_Node_t *newHead = tmp->next;
 	if (newHead == NULL) {
+        free(q->head->data);
+        free(q->head->link);
 		free(q->head);
-		Node_t* temp = (Node_t*)malloc(sizeof(Node_t));	
+        P_Node_t* temp = (P_Node_t*)malloc(sizeof(P_Node_t));
 		temp->next = NULL;
 		q->head = temp;
 		q->tail = temp;	
@@ -69,6 +77,8 @@ int PageQueue_dequeue(P_Queue_t *q, char** returnvalue) {
 		return -1; // queue was empty
 	}
   	q->head = newHead;
+    free(tmp->data);
+    free(tmp->link);
 	free(tmp);
 	pthread_mutex_unlock(&pageQueueMutex);
 	printf("%d: dequeue release lock\n", pthread_self());

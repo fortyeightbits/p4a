@@ -15,7 +15,8 @@ void LinkQueue_init(L_Queue_t* q){
 	printf("%d: init getting lock\n", pthread_self());
 	pthread_mutex_lock(&linkQueueMutex);
 	q->size = 0;
-	Node_t* temp = (Node_t*)malloc(sizeof(Node_t));	
+    L_Node_t* temp = (L_Node_t*)malloc(sizeof(L_Node_t));
+    temp->data = (char*)malloc(100*sizeof(char));
 	temp->next = NULL;
 	q->head = temp;
 	q->tail = temp;	
@@ -35,11 +36,12 @@ int LinkQueue_enqueue(char* x, L_Queue_t* q, int queue_size) {
 	}
 	printf("%d: enqueue either woke up or never slept\n", pthread_self());
 	if(q->head->data == NULL){
-		q->tail->data = x;		
+        strcpy(q->tail->data, x);
 	}
 	else{
-		Node_t* temp = (Node_t*)malloc(sizeof(Node_t));
-		temp->data = x; 
+        L_Node_t* temp = (L_Node_t*)malloc(sizeof(L_Node_t));
+        temp->data = (char*)malloc(100*sizeof(char));
+        strcpy(temp->data, x);
 		temp->next = NULL;
 
 		q->tail->next = temp;
@@ -64,13 +66,14 @@ int LinkQueue_dequeue(L_Queue_t *q, char** returnvalue) {
 		pthread_cond_wait(&linkQueueFill, &linkQueueMutex);
 	}
 	printf("%d: dequeue woke up\n", pthread_self());
-	Node_t *tmp = q->head;
+    L_Node_t *tmp = q->head;
 	*returnvalue = q->head->data;
-	Node_t *newHead = tmp->next;
+    L_Node_t *newHead = tmp->next;
 	if (newHead == NULL) {
+        free(q->head->data);
 		free(q->head);
 		q->size = 0;
-		Node_t* temp = (Node_t*)malloc(sizeof(Node_t));	
+        L_Node_t* temp = (L_Node_t*)malloc(sizeof(L_Node_t));
 		temp->next = NULL;
 		q->head = temp;
 		q->tail = temp;	
@@ -83,6 +86,7 @@ int LinkQueue_dequeue(L_Queue_t *q, char** returnvalue) {
 		return -1; // queue was empty
 	}
   	q->head = newHead;
+    free(tmp->data);
 	free(tmp);
 	q->size--;
 	printf("%d: dequeue signalling\n", pthread_self());

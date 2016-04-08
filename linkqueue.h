@@ -8,8 +8,8 @@ typedef struct L_Node {
 } L_Node_t;
 
 typedef struct L_Queue {
-	Node_t *head;
-	Node_t *tail;
+    L_Node_t *head;
+    L_Node_t *tail;
 	int size;
 } L_Queue_t;
   

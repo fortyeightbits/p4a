@@ -4,23 +4,24 @@
 // TYPDEFINES LISTED HERE
 typedef struct P_Node {
 	char* data;
+    char* link;
 	struct P_Node* next;
 } P_Node_t;
 
 typedef struct P_Queue {
-	Node_t *head;
-	Node_t *tail;
+    P_Node_t *head;
+    P_Node_t *tail;
 } P_Queue_t;
   
-typedef struct EnQArgPacket{
+typedef struct P_EnQArgPacket{
 	char* x;
 	P_Queue_t* q;
-} EPacket_t;
+} P_EPacket_t;
 
-typedef struct DeQArgPacket{
+typedef struct P_DeQArgPacket{
 	P_Queue_t* q;
 	char** returnvalue;
-} DPacket_t;
+} P_DPacket_t;
 
 // FUNCTION FORWARD DECLARATIONS HERE
 void PageQueue_init(P_Queue_t* q);
