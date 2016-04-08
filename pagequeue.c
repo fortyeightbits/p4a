@@ -60,8 +60,8 @@ int PageQueue_dequeue(P_Queue_t *q, char** returnvalue, char** link) {
 	}
 	printf("%d: dequeue woke up\n", pthread_self());
     P_Node_t *tmp = q->head;
-	*returnvalue = q->head->data;
-    *link       = q->head->link;
+    strcpy(*returnvalue, q->head->data);
+    strcpy(*link, q->head->link);
     P_Node_t *newHead = tmp->next;
 	if (newHead == NULL) {
         free(q->head->data);

@@ -67,7 +67,7 @@ int LinkQueue_dequeue(L_Queue_t *q, char** returnvalue) {
 	}
 	printf("%d: dequeue woke up\n", pthread_self());
     L_Node_t *tmp = q->head;
-	*returnvalue = q->head->data;
+    strcpy(*returnvalue, q->head->data);
     L_Node_t *newHead = tmp->next;
 	if (newHead == NULL) {
         free(q->head->data);

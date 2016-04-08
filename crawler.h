@@ -1,6 +1,24 @@
 #ifndef __CRAWLER_H
 #define __CRAWLER_H
+// typdefines
+#include "linkqueue.h"
+#include "pagequeue.h"
 
+typedef struct parseArgPacket{
+    L_Queue_t* linkqueue;
+    P_Queue_t* pagequeue;
+    int queue_size;
+    void (*_edge_fn)(char *from, char *to);
+} pArgs_t;
+
+typedef struct downloadArgPacket{
+    L_Queue_t* linkqueue;
+    P_Queue_t* pagequeue;
+    char * (*_fetch_fn)(char *url);
+} dArgs_t;
+
+
+// Function prototypes
 int crawl(char *start_url,
 	  int download_workers,
 	  int parse_workers,
