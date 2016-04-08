@@ -25,7 +25,10 @@ int crawl(char *start_url,
 	  int queue_size,
 	  char * (*fetch_fn)(char *url),
 	  void (*edge_fn)(char *from, char *to));
-void parsePage(Queue_t* , Queue_t* );
-void downloadPage(Queue_t* , char *, char * (*_fetch_fn)(char *url), Queue_t* );
 void removeLine (char* );
+void* downloadHelper(void *);
+void* parseHelper(void *);
+void parsePage(char* , char* , void (*_edge_fn)(char *from, char *to), L_Queue_t* , int );
+
+
 #endif

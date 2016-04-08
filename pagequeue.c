@@ -54,7 +54,7 @@ int PageQueue_dequeue(P_Queue_t *q, char** returnvalue, char** link) {
 	printf("%d: dequeue getting lock\n", pthread_self());
 	pthread_mutex_lock(&pageQueueMutex);
 	printf("%d: dequeue got lock\n", pthread_self());
-	while (q->head == NULL){ //sleep if there's no pages to get
+    while (q->head->data == NULL){ //sleep if there's no pages to get
         printf("%d: dequeue sleeping\n", pthread_self());
 		pthread_cond_wait(&pageQueueFill, &pageQueueMutex);
 	}

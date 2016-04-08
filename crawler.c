@@ -20,7 +20,7 @@ int crawl(char *start_url,
 	LinkQueue_init(&linkQueue);
     LinkQueue_enqueue(start_url,linkQueue,queue_size);
 
-	P_Queue_t pageQueue;
+    P_Queue_t pageQueue;
 	PageQueue_init(&pageQueue);
 
     // Instantiate downloadHelper nad parseHelper void* args
@@ -55,6 +55,19 @@ int crawl(char *start_url,
 	}
 
     // TODO: Join here. Main sleeps until all workers have completed running work in system.
+    int m;
+    for(m = 0; m < download_workers; m++)
+    {
+        pthread_join(downloader_pool[m], NULL);
+    }
+
+    int n;
+    for(n = 0; n < parse_workers; n++)
+    {
+        pthread_join(parser_pool[n], NULL);
+    }
+
+    printf("done\n");
   return -1;
 }
 
@@ -62,8 +75,8 @@ int crawl(char *start_url,
 void* downloadHelper(void *arg) {   
     // Unpacking and creating local references to queues and fetch function
     char * (*_fetch_fn)(char *url) = ((dArgs_t*)arg)->_fetch_fn;
-    L_Queue_t linkQueue = ((dArgs_t*)arg)->linkqueue;
-    P_Queue_t pageQueue = ((dArgs_t*)arg)->pagequeue;
+    L_Queue_t* linkQueue = ((dArgs_t*)arg)->linkqueue;
+    P_Queue_t* pageQueue = ((dArgs_t*)arg)->pagequeue;
     // ---------------------------------------------------------------------
     char* returnValue = (char*)malloc(100*sizeof(char));
     char* page = (char*)malloc(1000*sizeof(char));
@@ -72,7 +85,7 @@ void* downloadHelper(void *arg) {
     {
         LinkQueue_dequeue(linkQueue, &returnValue);
         strcpy(page,*_fetch_fn(returnValue));
-        PageQueue_enqueue(page, &pageQueue);
+        PageQueue_enqueue(page, returnValue, pageQueue);
     }
 }
 
@@ -80,24 +93,17 @@ void* downloadHelper(void *arg) {
 void* parseHelper(void *arg) {
     // Unpacking and creating local references to queues and edge function
     void (*_edge_fn)(char *from, char *to) = ((pArgs_t*)arg)->_edge_fn;
-    L_Queue_t linkQueue = ((pArgs_t*)arg)->linkqueue;
-    P_Queue_t pageQueue = ((pArgs_t*)arg)->pagequeue;
+    L_Queue_t* linkQueue = ((pArgs_t*)arg)->linkqueue;
+    P_Queue_t* pageQueue = ((pArgs_t*)arg)->pagequeue;
     int linkQueue_size = ((pArgs_t*)arg)->queue_size;
     // ---------------------------------------------------------------------
     char* returnValue = (char*)malloc(1000*sizeof(char));
     char* link = (char*)malloc(100*sizeof(char));
     while (1)
     {
-        PageQueue_dequeue(&pageQueue, &returnValue, &link);
-        parsePage(returnValue, link, _edge_fn, &linkQueue, linkQueue_size);
+        PageQueue_dequeue(pageQueue, &returnValue, &link);
+        parsePage(returnValue, link, _edge_fn, linkQueue, linkQueue_size);
     }
-}
-
-char* downloadPage(char *link, char * (*_fetch_fn)(char *url)){
-
-  char* page = _fetch_fn(link);
-  assert (page != NULL);
-  return page;
 }
 
 void parsePage(char* page, char* pagename, void (*_edge_fn)(char *from, char *to), L_Queue_t* linkQueue, int linkQueue_size){

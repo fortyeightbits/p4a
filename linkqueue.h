@@ -4,7 +4,7 @@
 // TYPDEFINES LISTED HERE
 typedef struct L_Node {
 	char* data;
-	struct Node* next;
+    struct L_Node* next;
 } L_Node_t;
 
 typedef struct L_Queue {
@@ -25,6 +25,6 @@ typedef struct L_DeQArgPacket{
 } L_DPacket_t;
 
 // FUNCTION FORWARD DECLARATIONS HERE
-void LinkQueue_init(L_Queue_t* q);
-int LinkQueue_enqueue(char* x, L_Queue_t* q, int queue_size) ;
+void LinkQueue_init(L_Queue_t*);
+int LinkQueue_enqueue(char* , L_Queue_t* , int );
 int LinkQueue_dequeue(L_Queue_t *q, char** returnvalue);

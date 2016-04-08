@@ -24,6 +24,6 @@ typedef struct P_DeQArgPacket{
 } P_DPacket_t;
 
 // FUNCTION FORWARD DECLARATIONS HERE
-void PageQueue_init(P_Queue_t* q);
-int PageQueue_enqueue(char* x, P_Queue_t* q);
+void PageQueue_init(P_Queue_t* );
+int PageQueue_enqueue(char* , char* , P_Queue_t* );
 int PageQueue_dequeue(P_Queue_t *, char**, char**);
