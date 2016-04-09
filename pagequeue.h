@@ -1,5 +1,5 @@
-#include "cs537.h"
-
+#ifndef _PAGEQUEUE_H
+#define _PAGEQUEUE_H
 
 // TYPDEFINES LISTED HERE
 typedef struct P_Node {
@@ -27,3 +27,4 @@ typedef struct P_DeQArgPacket{
 void PageQueue_init(P_Queue_t* );
 int PageQueue_enqueue(char* , char* , P_Queue_t* );
 int PageQueue_dequeue(P_Queue_t *, char**, char**);
+#endif

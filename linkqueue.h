@@ -1,5 +1,5 @@
-#include "cs537.h"
-
+#ifndef _LINKQUEUE_H
+#define _LINKQUEUE_H
 
 // TYPDEFINES LISTED HERE
 typedef struct L_Node {
@@ -28,3 +28,4 @@ typedef struct L_DeQArgPacket{
 void LinkQueue_init(L_Queue_t*);
 int LinkQueue_enqueue(char* , L_Queue_t* , int );
 int LinkQueue_dequeue(L_Queue_t *q, char** returnvalue);
+#endif

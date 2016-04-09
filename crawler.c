@@ -9,6 +9,7 @@
 #include "pagequeue.h"
 #include "crawler.h"
 
+
 int crawl(char *start_url,
 	  int download_workers,
 	  int parse_workers,
@@ -18,10 +19,15 @@ int crawl(char *start_url,
 	//Set up queues
 	L_Queue_t linkQueue;
 	LinkQueue_init(&linkQueue);
-    LinkQueue_enqueue(start_url,linkQueue,queue_size);
+    LinkQueue_enqueue(start_url,&linkQueue,queue_size);
 
     P_Queue_t pageQueue;
 	PageQueue_init(&pageQueue);
+	
+	//set up workinsystem check - not sure if declaration in header is right
+	mainMutex = PTHREAD_MUTEX_INITIALIZER;
+	//pthread_cond_t noWorkInSystem = PTHREAD_COND_INITIALIZER;
+	workInSystem = 1; //starts with linkqueue containing start url
 
     // Instantiate downloadHelper nad parseHelper void* args
     pArgs_t parserArgs;
@@ -84,8 +90,12 @@ void* downloadHelper(void *arg) {
     while (1)
     {
         LinkQueue_dequeue(linkQueue, &returnValue);
-        strcpy(page,*_fetch_fn(returnValue));
+        strcpy(page, _fetch_fn(returnValue));
         PageQueue_enqueue(page, returnValue, pageQueue);
+		
+		//should i quit? (T___T)ㅗ threading sucks help me i'm a conflicted thread
+		if (workInSystem == 0)
+			pthread_exit(NULL);
     }
 }
 
@@ -103,6 +113,16 @@ void* parseHelper(void *arg) {
     {
         PageQueue_dequeue(pageQueue, &returnValue, &link);
         parsePage(returnValue, link, _edge_fn, linkQueue, linkQueue_size);
+		//is this the right place?
+		pthread_mutex_lock(&mainMutex);
+		workInSystem--;
+		pthread_mutex_unlock(&mainMutex);
+		
+		//should i quit.... D:
+		if (workInSystem == 0){
+			pthread_exit(NULL);
+		}
+
     }
 }
 
@@ -135,12 +155,19 @@ void parsePage(char* page, char* pagename, void (*_edge_fn)(char *from, char *to
             removeLine(linkchunk);
             printf("here's the link: %s\n", linkchunk);
             //TODO: Check if linkchunk is in hash table
-            *_edge_fn(pagename, linkchunk);
+            _edge_fn(pagename, linkchunk);
             LinkQueue_enqueue(linkchunk, linkQueue, linkQueue_size);
+			//got more work for you to do!
+			pthread_mutex_lock(&mainMutex);
+			workInSystem++;
+			pthread_mutex_unlock(&mainMutex);
         }
         printf(" --> %s\n", link);
       }
   }
+  
+  //done processing the page
+
 }
 
 //removes \n
