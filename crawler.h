@@ -1,5 +1,5 @@
-#ifndef __CRAWLER_H
-#define __CRAWLER_H
+#ifndef __CRAWLER_H_
+#define __CRAWLER_H_
 // typdefines
 #include "linkqueue.h"
 #include "pagequeue.h"
@@ -29,7 +29,6 @@ void removeLine (char* );
 void* downloadHelper(void *);
 void* parseHelper(void *);
 void parsePage(char* , char* , void (*_edge_fn)(char *from, char *to), L_Queue_t* , int );
-int workInSystem;
 
 
 #endif

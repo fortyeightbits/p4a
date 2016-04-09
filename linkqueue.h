@@ -1,5 +1,5 @@
-#ifndef _LINKQUEUE_H
-#define _LINKQUEUE_H
+#ifndef _LINKQUEUE_H_
+#define _LINKQUEUE_H_
 
 // TYPDEFINES LISTED HERE
 typedef struct L_Node {

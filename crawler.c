@@ -5,12 +5,12 @@
 #include <assert.h>
 #include <stdint.h>
 #include <pthread.h>
-#include "linkqueue.h"
-#include "pagequeue.h"
-#include "crawler.h"
 
+#include "crawler.h"
+#include "hashTable.h"
 //set up workinsystem check - not sure if declaration in header is right
 pthread_mutex_t mainMutex = PTHREAD_MUTEX_INITIALIZER;
+int workInSystem;
 
 int crawl(char *start_url,
 	  int download_workers,
@@ -26,6 +26,9 @@ int crawl(char *start_url,
     P_Queue_t pageQueue;
 	PageQueue_init(&pageQueue);
 	
+    // Set up hash table
+    hashTable_t hashtable;
+    HashTable_init(&hashtable);
 
 	//pthread_cond_t noWorkInSystem = PTHREAD_COND_INITIALIZER;
 	workInSystem = 1; //starts with linkqueue containing start url
@@ -155,13 +158,16 @@ void parsePage(char* page, char* pagename, void (*_edge_fn)(char *from, char *to
             linkchunk = linkchunk+(5*sizeof(char));
             removeLine(linkchunk);
             printf("here's the link: %s\n", linkchunk);
-            //TODO: Check if linkchunk is in hash table
-            _edge_fn(pagename, linkchunk);
-            LinkQueue_enqueue(linkchunk, linkQueue, linkQueue_size);
-			//got more work for you to do!
-			pthread_mutex_lock(&mainMutex);
-			workInSystem++;
-			pthread_mutex_unlock(&mainMutex);
+
+            if(lookupHashTable(linkchunk, &hashtable) == 0)
+            {
+                _edge_fn(pagename, linkchunk);
+                LinkQueue_enqueue(linkchunk, linkQueue, linkQueue_size);
+                //got more work for you to do!
+                pthread_mutex_lock(&mainMutex);
+                workInSystem++;
+                pthread_mutex_unlock(&mainMutex);
+            }
         }
         printf(" --> %s\n", link);
       }
