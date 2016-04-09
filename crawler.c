@@ -9,6 +9,8 @@
 #include "pagequeue.h"
 #include "crawler.h"
 
+//set up workinsystem check - not sure if declaration in header is right
+pthread_mutex_t mainMutex = PTHREAD_MUTEX_INITIALIZER;
 
 int crawl(char *start_url,
 	  int download_workers,
@@ -24,8 +26,7 @@ int crawl(char *start_url,
     P_Queue_t pageQueue;
 	PageQueue_init(&pageQueue);
 	
-	//set up workinsystem check - not sure if declaration in header is right
-	mainMutex = PTHREAD_MUTEX_INITIALIZER;
+
 	//pthread_cond_t noWorkInSystem = PTHREAD_COND_INITIALIZER;
 	workInSystem = 1; //starts with linkqueue containing start url
 

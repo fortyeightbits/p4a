@@ -30,6 +30,6 @@ void* downloadHelper(void *);
 void* parseHelper(void *);
 void parsePage(char* , char* , void (*_edge_fn)(char *from, char *to), L_Queue_t* , int );
 int workInSystem;
-pthread_mutex_t mainMutex; 
+
 
 #endif
