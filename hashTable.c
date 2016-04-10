@@ -46,6 +46,7 @@ int lookupHashTable(char* data, hashTable_t* hashtable)
     if (matched == 0)
     {
         // if found, then exit with 1.
+        pthread_mutex_unlock(&hashlock);
         return 1;
     }
     else if (matched != 0)
