@@ -13,7 +13,7 @@ libcrawler.so : crawler.c
 	gcc -g -fPIC -c -Wall -pthread linkqueue.c -o linkqueue.o
 	gcc -g -fPIC -c -Wall -pthread pagequeue.c -o pagequeue.o
 	gcc -g -fPIC -c -Wall -pthread hashTable.c -o hashTable.o
-	gcc -g -shared -o libcrawler.so crawler.o linkqueue.o pagequeue.o
+	gcc -g -shared -o libcrawler.so crawler.o linkqueue.o pagequeue.o hashTable.o
 
 .PHONY: clean
 clean :
