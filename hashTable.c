@@ -18,7 +18,7 @@ void HashTable_init(hashTable_t* hashtable)
     for(i = 0; i < size; ++i)
     {
         bucketNode_t* temp = (bucketNode_t*)malloc(sizeof(bucketNode_t));
-        temp->data = (char*)malloc(100*sizeof(char));
+        temp->data = NULL;
         temp->next = NULL;
 
         hashtable->buckets[i].head = temp;
@@ -37,6 +37,9 @@ int lookupHashTable(char* data, hashTable_t* hashtable)
     // Search for data in nodes of bucket (if any)
     while(parser != NULL)
     {
+        if (parser->data == NULL){
+            break;
+        }
         matched = strcmp(data, parser->data);
         if (matched == 0)
             break;
@@ -53,7 +56,8 @@ int lookupHashTable(char* data, hashTable_t* hashtable)
     {
         // if not found, then append to tail of that bucket and return 0.
         if(hashtable->buckets[bucketIndex].head->data == NULL){
-            strcpy(hashtable->buckets[bucketIndex]->tail->data, data);
+            hashtable->buckets[bucketIndex].head->data = (char*)malloc(100*sizeof(char));
+            strcpy(hashtable->buckets[bucketIndex].tail->data, data);
         }
         else{
             bucketNode_t* temp = (bucketNode_t*)malloc(sizeof(bucketNode_t));
@@ -66,6 +70,7 @@ int lookupHashTable(char* data, hashTable_t* hashtable)
         pthread_mutex_unlock(&hashlock);
         return 0;
     }
+    return -1;
 }
 
 int calculateHash(char* data)

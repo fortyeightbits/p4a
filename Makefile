@@ -9,9 +9,10 @@ web_tester : web_tester.c cs537.c libcrawler.so
 
 libcrawler.so : crawler.c
 	#gcc -g -shared -fPIC -o libcrawler.so crawler.c linkqueue.c pagequeue.c
-	gcc -g -fPIC -c crawler.c -Wall -o crawler.o
-	gcc -g -fPIC -c linkqueue.c -Wall -o linkqueue.o
-	gcc -g -fPIC -c pagequeue.c -Wall -o pagequeue.o
+	gcc -g -fPIC -c -Wall -pthread crawler.c -o crawler.o
+	gcc -g -fPIC -c -Wall -pthread linkqueue.c -o linkqueue.o
+	gcc -g -fPIC -c -Wall -pthread pagequeue.c -o pagequeue.o
+	gcc -g -fPIC -c -Wall -pthread hashTable.c -o hashTable.o
 	gcc -g -shared -o libcrawler.so crawler.o linkqueue.o pagequeue.o
 
 .PHONY: clean

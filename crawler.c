@@ -7,7 +7,6 @@
 #include <pthread.h>
 
 #include "crawler.h"
-#include "hashTable.h"
 //set up workinsystem check - not sure if declaration in header is right
 pthread_mutex_t mainMutex = PTHREAD_MUTEX_INITIALIZER;
 int workInSystem;
@@ -38,6 +37,7 @@ int crawl(char *start_url,
     parserArgs.queue_size = queue_size;
     parserArgs.linkqueue = &linkQueue;
     parserArgs.pagequeue = &pageQueue;
+    parserArgs.hashtable = &hashtable;
     parserArgs._edge_fn = _edge_fn;
 
     dArgs_t downloadArgs;
@@ -109,6 +109,7 @@ void* parseHelper(void *arg) {
     void (*_edge_fn)(char *from, char *to) = ((pArgs_t*)arg)->_edge_fn;
     L_Queue_t* linkQueue = ((pArgs_t*)arg)->linkqueue;
     P_Queue_t* pageQueue = ((pArgs_t*)arg)->pagequeue;
+    hashTable_t* hashtable = ((pArgs_t*)arg)->hashtable;
     int linkQueue_size = ((pArgs_t*)arg)->queue_size;
     // ---------------------------------------------------------------------
     char* returnValue = (char*)malloc(1000*sizeof(char));
@@ -116,7 +117,7 @@ void* parseHelper(void *arg) {
     while (1)
     {
         PageQueue_dequeue(pageQueue, &returnValue, &link);
-        parsePage(returnValue, link, _edge_fn, linkQueue, linkQueue_size);
+        parsePage(returnValue, link, _edge_fn, linkQueue, hashtable, linkQueue_size);
 		//is this the right place?
 		pthread_mutex_lock(&mainMutex);
 		workInSystem--;
@@ -130,7 +131,7 @@ void* parseHelper(void *arg) {
     }
 }
 
-void parsePage(char* page, char* pagename, void (*_edge_fn)(char *from, char *to), L_Queue_t* linkQueue, int linkQueue_size){
+void parsePage(char* page, char* pagename, void (*_edge_fn)(char *from, char *to), L_Queue_t* linkQueue, hashTable_t* hashtable, int linkQueue_size){
   char* lineSavePtr = NULL;
   char* spaceSavePtr = NULL;
   char* line;
@@ -159,7 +160,7 @@ void parsePage(char* page, char* pagename, void (*_edge_fn)(char *from, char *to
             removeLine(linkchunk);
             printf("here's the link: %s\n", linkchunk);
 
-            if(lookupHashTable(linkchunk, &hashtable) == 0)
+            if(lookupHashTable(linkchunk, hashtable) == 0)
             {
                 _edge_fn(pagename, linkchunk);
                 LinkQueue_enqueue(linkchunk, linkQueue, linkQueue_size);

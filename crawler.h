@@ -3,10 +3,12 @@
 // typdefines
 #include "linkqueue.h"
 #include "pagequeue.h"
+#include "hashTable.h"
 
 typedef struct parseArgPacket{
     L_Queue_t* linkqueue;
     P_Queue_t* pagequeue;
+    hashTable_t* hashtable;
     int queue_size;
     void (*_edge_fn)(char *from, char *to);
 } pArgs_t;
@@ -28,7 +30,7 @@ int crawl(char *start_url,
 void removeLine (char* );
 void* downloadHelper(void *);
 void* parseHelper(void *);
-void parsePage(char* , char* , void (*_edge_fn)(char *from, char *to), L_Queue_t* , int );
+void parsePage(char* , char* , void (*_edge_fn)(char *from, char *to), L_Queue_t* , hashTable_t* , int );
 
 
 #endif
