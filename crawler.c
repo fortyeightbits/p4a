@@ -26,7 +26,7 @@ int crawl(char *start_url,
 	LinkQueue_init(&linkQueue);
 	//TODO: first link, remove .txt
 	lookupHashTable("pagea", &hashtable); //add to hash table
-  LinkQueue_enqueue("pagea",&linkQueue,queue_size);
+    LinkQueue_enqueue("pagea",&linkQueue,queue_size);
 
 
 
@@ -97,15 +97,14 @@ void* downloadHelper(void *arg) {
 
     while (1)
     {
-       LinkQueue_dequeue(linkQueue, &returnValue);
-       strcpy(page, _fetch_fn(returnValue));
+        //help me i'm a conflicted thread
+        if (workInSystem == 0){
+            printf("%d: downloader going byee!\n", pthread_self());
+        pthread_exit(NULL);
+        }
+        LinkQueue_dequeue(linkQueue, &returnValue);
+        strcpy(page, _fetch_fn(returnValue));
         PageQueue_enqueue(page, returnValue, pageQueue);
-		
-		//help me i'm a conflicted thread
-		if (workInSystem == 0){
-			printf("%d: downloader going byee!\n", pthread_self());
-		pthread_exit(NULL);
-		}
     }
 }
 
@@ -122,6 +121,11 @@ void* parseHelper(void *arg) {
     char* link = (char*)malloc(100*sizeof(char));
     while (1)
     {
+        //should i quit.... D:
+        if (workInSystem == 0){
+                printf("%d: parser going byee!\n", pthread_self());
+            pthread_exit(NULL);
+        }
         PageQueue_dequeue(pageQueue, &returnValue, &link);
 		printf("%d: page dequeued, parsing now\n", pthread_self());
         parsePage(returnValue, link, _edge_fn, linkQueue, hashtable, linkQueue_size);
@@ -131,13 +135,6 @@ void* parseHelper(void *arg) {
 		printf("%d: parser decrementing, unlocking mainmutex\n", pthread_self());
 		printf("%d: parser: WIS: %d\n", pthread_self(), workInSystem);
 		pthread_mutex_unlock(&mainMutex);
-		
-		//should i quit.... D:
-		if (workInSystem == 0){
-				printf("%d: parser going byee!\n", pthread_self());
-			pthread_exit(NULL);
-		}
-
     }
 }
 
