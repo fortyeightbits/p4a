@@ -2,7 +2,7 @@
 all : libcrawler.so file_tester web_tester
 
 file_tester : file_tester.c libcrawler.so
-	gcc -g -L. -lcrawler -lpthread file_tester.c -Wall -Werror -o file_tester
+	gcc -g -L. file_tester.c -Wall -Werror -o file_tester -lcrawler -lpthread
 
 web_tester : web_tester.c cs537.c libcrawler.so
 	gcc -g -L. -lcrawler -lpthread web_tester.c cs537.c -Wall -Werror -o web_tester
