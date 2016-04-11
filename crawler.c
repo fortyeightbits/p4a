@@ -9,6 +9,7 @@
 #include "crawler.h"
 //set up workinsystem check - not sure if declaration in header is right
 pthread_mutex_t mainMutex = PTHREAD_MUTEX_INITIALIZER;
+//pthread_cond_t noWork = PTHREAD_COND_INITIALIZER;
 int workInSystem;
 
 int crawl(char *start_url,
@@ -106,6 +107,7 @@ void* downloadHelper(void *arg) {
         strcpy(page, _fetch_fn(returnValue));
         PageQueue_enqueue(page, returnValue, pageQueue);
     }
+	
 }
 
 //parser is the producer of links
@@ -123,8 +125,10 @@ void* parseHelper(void *arg) {
     {
         //should i quit.... D:
         if (workInSystem == 0){
+			
                 printf("%d: parser going byee!\n", pthread_self());
-            pthread_exit(NULL);
+				pthread_exit(NULL);
+
         }
         PageQueue_dequeue(pageQueue, &returnValue, &link);
 		printf("%d: page dequeued, parsing now\n", pthread_self());
