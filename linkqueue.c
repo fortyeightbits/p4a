@@ -26,11 +26,11 @@ void LinkQueue_init(L_Queue_t* q){
 //for parser to enqueue links
 int LinkQueue_enqueue(char* x, L_Queue_t* q, int queue_size) {
 	
-    printf("%d: linkqueue enqueue getting lock\n", pthread_self());
+    //printf("%d: linkqueue enqueue getting lock\n", pthread_self());
 	pthread_mutex_lock(&linkQueueMutex);
-    printf("%d: linkqueue eequeue got lock\n", pthread_self());
+   // printf("%d: linkqueue eequeue got lock\n", pthread_self());
 	while (q->size == queue_size){ 
-        printf("%d: linkqueue enqueue sleeping because queue is full\n", pthread_self());
+      //  printf("%d: linkqueue enqueue sleeping because queue is full\n", pthread_self());
 		pthread_cond_wait(&linkQueueEmpty, &linkQueueMutex);
 	}
     //printf("%d: linkqueue enqueue either woke up or never slept\n", pthread_self());
@@ -52,24 +52,16 @@ int LinkQueue_enqueue(char* x, L_Queue_t* q, int queue_size) {
 	pthread_cond_signal(&linkQueueFill);
     //printf("%d: linkqueue enqueue going to release lock\n", pthread_self());
 	pthread_mutex_unlock(&linkQueueMutex);
-    printf("%d: linkqueue enqueue released lock\n", pthread_self());
+    //printf("%d: linkqueue enqueue released lock\n", pthread_self());
 	return 0;
 }
 
 //for downloader to dequeue links
 int LinkQueue_dequeue(L_Queue_t *q, char** returnvalue) {
-    printf("%d: linkqueue dequeue getting lock\n", pthread_self());
+   // printf("%d: linkqueue dequeue getting lock\n", pthread_self());
 	pthread_mutex_lock(&linkQueueMutex);
-    printf("%d: linkqueue dequeue got lock\n", pthread_self());
+    //printf("%d: linkqueue dequeue got lock\n", pthread_self());
 	while (q->size == 0){ //sleep if there's no links to get
-        if(workInSystem == 0)
-        {
-            printf("%d: downloader going byee(from inside LinkQueue_dequeue!\n", pthread_self());
-            pthread_cond_broadcast(&linkQueueFill);
-            printf("%d: signalling for linkQueue_dequeue to wake up\n", pthread_self());
-            pthread_exit(NULL);
-        }
-        printf("%d: linkqueue dequeue sleeping, q->size is %d\n", pthread_self(), q->size);
 		pthread_cond_wait(&linkQueueFill, &linkQueueMutex);
 	}
     //printf("%d: linkqueue dequeue woke up or never slept\n", pthread_self());
@@ -89,7 +81,7 @@ int LinkQueue_dequeue(L_Queue_t *q, char** returnvalue) {
 		pthread_cond_signal(&linkQueueEmpty);
 		//printf("%d: dequeue going to release lock\n", pthread_self());
 		pthread_mutex_unlock(&linkQueueMutex);
-        printf("%d: linkqueue dequeue release lock (-1)\n", pthread_self());
+       //printf("%d: linkqueue dequeue release lock (-1)\n", pthread_self());
 		return -1; // queue was empty
 	}
   	q->head = newHead;
@@ -99,6 +91,6 @@ int LinkQueue_dequeue(L_Queue_t *q, char** returnvalue) {
 	//printf("%d: dequeue signalling\n", pthread_self());
 	pthread_cond_signal(&linkQueueEmpty);
 	pthread_mutex_unlock(&linkQueueMutex);
-    printf("%d: linkqueue dequeue release lock\n", pthread_self());
+  //  printf("%d: linkqueue dequeue release lock\n", pthread_self());
 	return 0;
 }

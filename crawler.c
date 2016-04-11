@@ -9,7 +9,7 @@
 #include "crawler.h"
 //set up workinsystem check - not sure if declaration in header is right
 pthread_mutex_t mainMutex = PTHREAD_MUTEX_INITIALIZER;
-//pthread_cond_t noWork = PTHREAD_COND_INITIALIZER;
+pthread_cond_t noWork = PTHREAD_COND_INITIALIZER;
 int workInSystem;
 extern pthread_cond_t linkQueueFill;
 int crawl(char *start_url,
@@ -26,12 +26,9 @@ int crawl(char *start_url,
 	L_Queue_t linkQueue;
 	LinkQueue_init(&linkQueue);
 	//TODO: first link, remove .txt
-	lookupHashTable("pagea", &hashtable); //add to hash table
+	//TODO: e->a should still be printed
+	lookupHashTable("pagea", &hashtable); 
     LinkQueue_enqueue("pagea",&linkQueue,queue_size);
-
-
-
-	//pthread_cond_t noWorkInSystem = PTHREAD_COND_INITIALIZER;
 	workInSystem = 1; //starts with linkqueue containing start url
 
     // Instantiate downloadHelper nad parseHelper void* args
@@ -66,30 +63,28 @@ int crawl(char *start_url,
         pthread_create(&parser_pool[p], NULL, parseHelper, ((void*)(&parserArgs)));
 	}
 
-    // Join here. Main sleeps until all workers have completed running work in system.
-//    int m;
-//    for(m = 0; m < download_workers; m++)
-//    {
-		
-//        pthread_join(downloader_pool[m], NULL);
-//		printf("joined downloader %d\n", m);
-//    }
-    int m;
-    for(m = 0; m < download_workers; m++)
-    {
-        pthread_cond_broadcast(&linkQueueFill);
-        printf("signalling downloader %d\n", m);
+    
+    while(workInSystem != 0){
+	pthread_cond_wait(&noWork, &mainMutex);
     }
+    
+      int m;
+    for(m = 0; m < download_workers; m++)
+    {	
+        pthread_cancel(downloader_pool[m]);
+	printf("joined downloader %d\n", m);
+   }
 
     int n;
     for(n = 0; n < parse_workers; n++)
     {
-        pthread_join(parser_pool[n], NULL);
+        pthread_cancel(parser_pool[n]);
 		printf("joined parser %d\n", n);
     }
 
     printf("done\n");
   return 0;
+
 }
 
 //downloader is the consumer of links
@@ -104,20 +99,10 @@ void* downloadHelper(void *arg) {
 
     while (1)
     {
-        //help me i'm a conflicted thread
-        if (workInSystem == 0){
-            printf("%d: downloader going byee!\n", pthread_self());
-            pthread_mutex_lock(&mainMutex);
-            pthread_cond_broadcast(&linkQueueFill);
-            printf("%d: signalling for linkQueue_dequeue to wake up\n", pthread_self());
-            pthread_mutex_unlock(&mainMutex);
-        pthread_exit(NULL);
-        }
         LinkQueue_dequeue(linkQueue, &returnValue);
         strcpy(page, _fetch_fn(returnValue));
         PageQueue_enqueue(page, returnValue, pageQueue);
     }
-	
 }
 
 //parser is the producer of links
@@ -133,24 +118,15 @@ void* parseHelper(void *arg) {
     char* link = (char*)malloc(100*sizeof(char));
     while (1)
     {
-        //should i quit.... D:
-        if (workInSystem == 0){
-			
-                printf("%d: parser going byee!\n", pthread_self());
-                pthread_mutex_lock(&mainMutex);
-                pthread_cond_broadcast(&linkQueueFill);
-                printf("%d: signalling for linkQueue_dequeue to wake up\n", pthread_self());
-                pthread_mutex_unlock(&mainMutex);
-				pthread_exit(NULL);
-        }
         PageQueue_dequeue(pageQueue, &returnValue, &link);
-		printf("%d: page dequeued, parsing now\n", pthread_self());
+		//printf("%d: page dequeued, parsing now\n", pthread_self());
         parsePage(returnValue, link, _edge_fn, linkQueue, hashtable, linkQueue_size);
-		printf("%d: parser getting mainmutex\n", pthread_self());
+		//printf("%d: parser getting mainmutex\n", pthread_self());
 		pthread_mutex_lock(&mainMutex);
 		workInSystem--;
-		printf("%d: parser decrementing, unlocking mainmutex\n", pthread_self());
-		printf("%d: parser: WIS: %d\n", pthread_self(), workInSystem);
+		pthread_cond_signal(&noWork);
+		//printf("%d: parser: WIS: %d\n", pthread_self(), workInSystem);
+	 // printf("%d: unlocking mainmutex\n", pthread_self());
 		pthread_mutex_unlock(&mainMutex);
     }
 }
@@ -184,7 +160,6 @@ void parsePage(char* page, char* pagename, void (*_edge_fn)(char *from, char *to
             {
                 _edge_fn(pagename, linkchunk);
                 LinkQueue_enqueue(linkchunk, linkQueue, linkQueue_size);
-                //got more work for you to do!
                 pthread_mutex_lock(&mainMutex);
                 workInSystem++;
                 pthread_mutex_unlock(&mainMutex);
