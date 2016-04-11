@@ -10,6 +10,7 @@
 pthread_mutex_t linkQueueMutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t linkQueueEmpty = PTHREAD_COND_INITIALIZER;
 pthread_cond_t linkQueueFill = PTHREAD_COND_INITIALIZER;
+extern int workInSystem;
 
 void LinkQueue_init(L_Queue_t* q){
 	pthread_mutex_lock(&linkQueueMutex);
@@ -61,7 +62,14 @@ int LinkQueue_dequeue(L_Queue_t *q, char** returnvalue) {
 	pthread_mutex_lock(&linkQueueMutex);
     printf("%d: linkqueue dequeue got lock\n", pthread_self());
 	while (q->size == 0){ //sleep if there's no links to get
-        printf("%d: linkqueue dequeue sleeping\n", pthread_self());
+        if(workInSystem == 0)
+        {
+            printf("%d: downloader going byee(from inside LinkQueue_dequeue!\n", pthread_self());
+            pthread_cond_broadcast(&linkQueueFill);
+            printf("%d: signalling for linkQueue_dequeue to wake up\n", pthread_self());
+            pthread_exit(NULL);
+        }
+        printf("%d: linkqueue dequeue sleeping, q->size is %d\n", pthread_self(), q->size);
 		pthread_cond_wait(&linkQueueFill, &linkQueueMutex);
 	}
     //printf("%d: linkqueue dequeue woke up or never slept\n", pthread_self());

@@ -11,7 +11,7 @@
 pthread_mutex_t mainMutex = PTHREAD_MUTEX_INITIALIZER;
 //pthread_cond_t noWork = PTHREAD_COND_INITIALIZER;
 int workInSystem;
-
+extern pthread_cond_t linkQueueFill;
 int crawl(char *start_url,
 	  int download_workers,
 	  int parse_workers,
@@ -67,12 +67,18 @@ int crawl(char *start_url,
 	}
 
     // Join here. Main sleeps until all workers have completed running work in system.
+//    int m;
+//    for(m = 0; m < download_workers; m++)
+//    {
+		
+//        pthread_join(downloader_pool[m], NULL);
+//		printf("joined downloader %d\n", m);
+//    }
     int m;
     for(m = 0; m < download_workers; m++)
     {
-		
-        pthread_join(downloader_pool[m], NULL);
-		printf("joined downloader %d\n", m);
+        pthread_cond_broadcast(&linkQueueFill);
+        printf("signalling downloader %d\n", m);
     }
 
     int n;
@@ -101,6 +107,10 @@ void* downloadHelper(void *arg) {
         //help me i'm a conflicted thread
         if (workInSystem == 0){
             printf("%d: downloader going byee!\n", pthread_self());
+            pthread_mutex_lock(&mainMutex);
+            pthread_cond_broadcast(&linkQueueFill);
+            printf("%d: signalling for linkQueue_dequeue to wake up\n", pthread_self());
+            pthread_mutex_unlock(&mainMutex);
         pthread_exit(NULL);
         }
         LinkQueue_dequeue(linkQueue, &returnValue);
@@ -127,8 +137,11 @@ void* parseHelper(void *arg) {
         if (workInSystem == 0){
 			
                 printf("%d: parser going byee!\n", pthread_self());
+                pthread_mutex_lock(&mainMutex);
+                pthread_cond_broadcast(&linkQueueFill);
+                printf("%d: signalling for linkQueue_dequeue to wake up\n", pthread_self());
+                pthread_mutex_unlock(&mainMutex);
 				pthread_exit(NULL);
-
         }
         PageQueue_dequeue(pageQueue, &returnValue, &link);
 		printf("%d: page dequeued, parsing now\n", pthread_self());
@@ -167,7 +180,6 @@ void parsePage(char* page, char* pagename, void (*_edge_fn)(char *from, char *to
         {
             linkchunk = linkchunk+(5*sizeof(char));
             removeLine(linkchunk);
-
             if(lookupHashTable(linkchunk, hashtable) == 0)
             {
                 _edge_fn(pagename, linkchunk);
