@@ -9,6 +9,8 @@
 
 pthread_mutex_t pageQueueMutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t pageQueueFill = PTHREAD_COND_INITIALIZER;
+extern int sleepingThreads;
+extern pthread_cond_t noWork;
 
 void PageQueue_init(P_Queue_t* q){
 	pthread_mutex_lock(&pageQueueMutex);
@@ -59,7 +61,10 @@ int PageQueue_dequeue(P_Queue_t *q, char** returnvalue, char** link) {
 	//printf("%d: pagedequeue got lock\n", pthread_self());
     while (q->head->data == NULL){ //sleep if there's no pages to get   
      // printf("%d: pagequeue dequeue sleeping\n", pthread_self());
+        sleepingThreads++;
+        pthread_cond_signal(&noWork);
 		pthread_cond_wait(&pageQueueFill, &pageQueueMutex);
+        sleepingThreads--;
 	}
 	//printf("%d: pagedequeue woke up\n", pthread_self());
     P_Node_t *tmp = q->head;

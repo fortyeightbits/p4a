@@ -11,6 +11,7 @@
 pthread_mutex_t mainMutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t noWork = PTHREAD_COND_INITIALIZER;
 int workInSystem;
+int sleepingThreads = 0;
 extern pthread_cond_t linkQueueFill;
 int crawl(char *start_url,
 	  int download_workers,
@@ -64,7 +65,8 @@ int crawl(char *start_url,
 	}
 
     
-    while(!((workInSystem == 0)&&(pageQueue.size == 0)&&(linkQueue.size == 0))){
+    while(!((workInSystem == 0)&&(pageQueue.size == 0)&&(linkQueue.size == 0)&&((parse_workers+download_workers)-sleepingThreads == 0))){
+        printf("parse_workers = %d, download workers = %d, sleeping threads = %d\n", parse_workers, download_workers, sleepingThreads);
         pthread_cond_wait(&noWork, &mainMutex);
     }
 
