@@ -18,6 +18,7 @@ void PageQueue_init(P_Queue_t* q){
 	temp->next = NULL;
 	temp->data = NULL;
 	temp->link = NULL;
+    q->size = 0;
 	q->head = temp;
 	q->tail = temp;	
 	pthread_mutex_unlock(&pageQueueMutex);
@@ -44,6 +45,7 @@ int PageQueue_enqueue(char* x, char* link, P_Queue_t* q) {
 		q->tail->next = temp;
 		q->tail = temp;
 	}
+    q->size++;
 	//printf("%d: enqueue signalling\n", pthread_self());
 	pthread_cond_signal(&pageQueueFill);
 	pthread_mutex_unlock(&pageQueueMutex);
@@ -71,7 +73,8 @@ int PageQueue_dequeue(P_Queue_t *q, char** returnvalue, char** link) {
         P_Node_t* temp = (P_Node_t*)malloc(sizeof(P_Node_t));
 		temp->next = NULL;
 		q->head = temp;
-		q->tail = temp;	
+        q->tail = temp;
+        q->size = 0;
 		q->head->data = NULL; //added this: do i need it for linkqueue?
        // printf("%d: pagequeue after dequeue (-1)-----qhead data: %s\n", pthread_self(), q->head->data);
 		pthread_mutex_unlock(&pageQueueMutex);
@@ -82,6 +85,7 @@ int PageQueue_dequeue(P_Queue_t *q, char** returnvalue, char** link) {
     free(tmp->data);
     free(tmp->link);
 	free(tmp);
+    q->size--;
        // printf("%d: pagequeue after dequeue-----qhead data: %s\n", pthread_self(), q->head->data);
 	pthread_mutex_unlock(&pageQueueMutex);
 	//printf("%d: pagedequeue release lock\n", pthread_self());

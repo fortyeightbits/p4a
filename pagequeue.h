@@ -11,6 +11,7 @@ typedef struct P_Node {
 typedef struct P_Queue {
     P_Node_t *head;
     P_Node_t *tail;
+    int size;
 } P_Queue_t;
   
 typedef struct P_EnQArgPacket{

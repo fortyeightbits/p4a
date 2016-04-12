@@ -64,16 +64,16 @@ int crawl(char *start_url,
 	}
 
     
-    while(workInSystem != 0){
-	pthread_cond_wait(&noWork, &mainMutex);
+    while(!((workInSystem == 0)&&(pageQueue.size == 0)&&(linkQueue.size == 0))){
+        pthread_cond_wait(&noWork, &mainMutex);
     }
-    
-      int m;
+
+    int m;
     for(m = 0; m < download_workers; m++)
     {	
         pthread_cancel(downloader_pool[m]);
-	printf("joined downloader %d\n", m);
-   }
+        printf("joined downloader %d\n", m);
+    }
 
     int n;
     for(n = 0; n < parse_workers; n++)
@@ -156,9 +156,9 @@ void parsePage(char* page, char* pagename, void (*_edge_fn)(char *from, char *to
         {
             linkchunk = linkchunk+(5*sizeof(char));
             removeLine(linkchunk);
+            _edge_fn(pagename, linkchunk);
             if(lookupHashTable(linkchunk, hashtable) == 0)
             {
-                _edge_fn(pagename, linkchunk);
                 LinkQueue_enqueue(linkchunk, linkQueue, linkQueue_size);
                 pthread_mutex_lock(&mainMutex);
                 workInSystem++;
