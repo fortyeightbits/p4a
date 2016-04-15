@@ -12,6 +12,8 @@ pthread_mutex_t mainMutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t noWork = PTHREAD_COND_INITIALIZER;
 int workInSystem;
 int sleepingThreads = 0;
+int totalThreads = 0;
+
 extern pthread_cond_t linkQueueFill;
 int crawl(char *start_url,
 	  int download_workers,
@@ -49,6 +51,7 @@ int crawl(char *start_url,
 	pthread_t downloader_pool[download_workers];
 	pthread_t parser_pool[parse_workers];
 	
+    totalThreads = download_workers + parse_workers;
 	//create downloaders
 	int d;
 	for(d = 0; d < download_workers; d++)

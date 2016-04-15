@@ -12,6 +12,7 @@ pthread_cond_t linkQueueEmpty = PTHREAD_COND_INITIALIZER;
 pthread_cond_t linkQueueFill = PTHREAD_COND_INITIALIZER;
 extern int workInSystem;
 extern int sleepingThreads;
+extern int totalThreads;
 extern pthread_cond_t noWork;
 
 void LinkQueue_init(L_Queue_t* q){
@@ -34,7 +35,8 @@ int LinkQueue_enqueue(char* x, L_Queue_t* q, int queue_size) {
 	while (q->size == queue_size){ 
       //  printf("%d: linkqueue enqueue sleeping because queue is full\n", pthread_self());
         sleepingThreads++;
-        pthread_cond_signal(&noWork);
+        if(sleepingThreads == totalThreads)
+            pthread_cond_signal(&noWork);
 		pthread_cond_wait(&linkQueueEmpty, &linkQueueMutex);
         sleepingThreads--;
 	}
@@ -68,7 +70,8 @@ int LinkQueue_dequeue(L_Queue_t *q, char** returnvalue) {
     //printf("%d: linkqueue dequeue got lock\n", pthread_self());
 	while (q->size == 0){ //sleep if there's no links to get
         sleepingThreads++;
-        pthread_cond_signal(&noWork);
+        if(sleepingThreads == totalThreads)
+            pthread_cond_signal(&noWork);
 		pthread_cond_wait(&linkQueueFill, &linkQueueMutex);
         sleepingThreads--;
 	}
