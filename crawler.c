@@ -28,8 +28,8 @@ int crawl(char *start_url,
 	LinkQueue_init(&linkQueue);
 	//TODO: first link, remove .txt
 	//TODO: e->a should still be printed
-	lookupHashTable("pagea", &hashtable); 
-    LinkQueue_enqueue("pagea",&linkQueue,queue_size);
+	lookupHashTable(start_url, &hashtable); 
+    LinkQueue_enqueue(start_url,&linkQueue,queue_size);
 	workInSystem = 1; //starts with linkqueue containing start url
 
     // Instantiate downloadHelper nad parseHelper void* args
@@ -66,7 +66,7 @@ int crawl(char *start_url,
 
     
     while(!((workInSystem == 0)&&(pageQueue.size == 0)&&(linkQueue.size == 0)&&((parse_workers+download_workers)-sleepingThreads == 0))){
-        printf("parse_workers = %d, download workers = %d, sleeping threads = %d\n", parse_workers, download_workers, sleepingThreads);
+        //printf("parse_workers = %d, download workers = %d, sleeping threads = %d\n", parse_workers, download_workers, sleepingThreads);
         pthread_cond_wait(&noWork, &mainMutex);
     }
 
@@ -74,17 +74,17 @@ int crawl(char *start_url,
     for(m = 0; m < download_workers; m++)
     {	
         pthread_cancel(downloader_pool[m]);
-        printf("joined downloader %d\n", m);
+        //printf("joined downloader %d\n", m);
     }
 
     int n;
     for(n = 0; n < parse_workers; n++)
     {
         pthread_cancel(parser_pool[n]);
-		printf("joined parser %d\n", n);
+		//printf("joined parser %d\n", n);
     }
 
-    printf("done\n");
+   // printf("done\n");
   return 0;
 
 }
@@ -154,7 +154,7 @@ void parsePage(char* page, char* pagename, void (*_edge_fn)(char *from, char *to
             break;
         char* linkchunk = strstr(link, "link:");
 
-        if(linkchunk != NULL)
+        if(linkchunk != NULL && linkchunk == link)
         {
             linkchunk = linkchunk+(5*sizeof(char));
             removeLine(linkchunk);
